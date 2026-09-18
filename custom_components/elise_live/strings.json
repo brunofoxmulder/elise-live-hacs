@@ -1,0 +1,93 @@
+{
+  "title": "Élise Live",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Choose a live model provider",
+        "description": "Use either Google Gemini Live or OpenAI GPT Realtime with the Home Assistant voice pipeline.",
+        "data": {
+          "provider": "Provider"
+        }
+      },
+      "provider": {
+        "title": "Connect to {provider}",
+        "description": "Enter the provider API key and choose how the live model should respond.",
+        "data": {
+          "api_key": "API key",
+          "model": "Live model",
+          "voice": "Voice",
+          "system_instruction": "System instruction",
+          "detailed_logging": "Enable detailed logging",
+          "transcribe_gemini": "Transcribe Gemini",
+          "transcribe_gpt": "Transcribe GPT",
+          "encourage_web_search": "Encourage web search",
+          "show_text": "Show text",
+          "llm_hass_api": "Home Assistant tools"
+        },
+        "data_description": {
+          "api_key": "Audio, text, Home Assistant tool schemas, and tool results are sent to the selected provider.",
+          "model": "Realtime audio model used for voice and typed conversations.",
+          "voice": "Built-in voice used for spoken replies.",
+          "system_instruction": "Optional custom personality and behavior. Home Assistant's Assist tool instructions are appended automatically.",
+          "detailed_logging": "Write transcripts, model details, and tool calls to the Home Assistant log. Enable only while troubleshooting.",
+          "transcribe_gemini": "Stream Gemini's spoken-response transcript into Home Assistant. Disabling this gives the lowest reply-audio latency.",
+          "transcribe_gpt": "Stream GPT's spoken-response transcript into Home Assistant. Disabling this gives the lowest reply-audio latency.",
+          "encourage_web_search": "Tell the model to use an exposed search-like Assist tool for current or explicitly requested online information.",
+          "show_text": "Expose show_text so the model can display formatted text when response transcription is off.",
+          "llm_hass_api": "Choose the tool APIs available to this assistant. An empty selection disables Home Assistant tools. Search and weather need their corresponding APIs."
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure live model",
+        "description": "Update the provider connection and response settings.",
+        "data": {
+          "api_key": "API key",
+          "model": "Live model",
+          "voice": "Voice",
+          "system_instruction": "System instruction",
+          "detailed_logging": "Enable detailed logging",
+          "transcribe_gemini": "Transcribe Gemini",
+          "transcribe_gpt": "Transcribe GPT",
+          "encourage_web_search": "Encourage web search",
+          "show_text": "Show text",
+          "llm_hass_api": "Home Assistant tools"
+        },
+        "data_description": {
+          "llm_hass_api": "Choose the tool APIs available to this assistant. An empty selection disables Home Assistant tools. Search and weather need their corresponding APIs."
+        }
+      }
+    },
+    "abort": {
+      "reconfigure_successful": "The live model was reconfigured successfully."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Live model options",
+        "description": "Update the provider connection and response settings.",
+        "data": {
+          "api_key": "API key",
+          "model": "Live model",
+          "voice": "Voice",
+          "system_instruction": "System instruction",
+          "detailed_logging": "Enable detailed logging",
+          "transcribe_gemini": "Transcribe Gemini",
+          "transcribe_gpt": "Transcribe GPT",
+          "encourage_web_search": "Encourage web search",
+          "show_text": "Show text",
+          "llm_hass_api": "Home Assistant tools"
+        },
+        "data_description": {
+          "llm_hass_api": "Choose the tool APIs available to this assistant. An empty selection disables Home Assistant tools. Search and weather need their corresponding APIs."
+        }
+      }
+    }
+  },
+  "issues": {
+    "spending_cap_exceeded": {
+      "title": "Gemini Live billing unavailable",
+      "description": "The Google AI project used by **{entry_title}** cannot process Gemini Live requests because its spending cap or available prepaid credit balance has been exhausted. [Manage the project's billing]({spending_cap_url}), then try Gemini Live again. This issue will clear automatically after Gemini Live connects successfully."
+    }
+  }
+}
