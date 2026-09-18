@@ -2,7 +2,7 @@
 
 Intégration vocale Home Assistant pour **Gemini Live** et **OpenAI Realtime**, avec sélection de plusieurs API LLM Home Assistant.
 
-**Version de test : 0.1.0-dev.1.** Cette première candidate nécessite une recette sur l'installation cible avant un usage habituel.
+**Version de test : 0.1.0-dev.2.** Corrige l'échec de restitution des prévisions météo par Gemini. Cette candidate nécessite une recette sur l'installation cible avant un usage habituel.
 
 Variante indépendante de [ha-gemini-live](https://github.com/matt123p/ha-gemini-live), basée sur **v1.0.7**, sous licence MIT de Matt Pyne. Ce projet communautaire n'est affilié ni à Google, ni à OpenAI, ni à Home Assistant.
 
@@ -37,7 +37,7 @@ Conserver l'assistant d'origine pendant les essais. Ce dépôt de distribution u
 
 ## Validation et limites
 
-35 tests hors production ont réussi sous Python 3.14.7 et Home Assistant 2026.9.2. Ils couvrent la sélection/fusion/dispatch des outils, les chemins texte et audio avec fournisseurs simulés, et la préservation du contexte. Le contrôle Tools for Assist emploie son code **1.10.2** inchangé ; seules les frontières réseau et données météo sont simulées. SDK : `google-genai==2.21.0`.
+49 tests hors production ont réussi sous Python 3.14.7 et Home Assistant 2026.9.2 (45 intégration, 4 installateur). Ils couvrent la sélection/fusion/dispatch des outils, les chemins texte et audio avec fournisseurs simulés, et la préservation du contexte. Le contrôle Tools for Assist emploie son code **1.10.2** inchangé et vérifie aussi le retour météo jusqu'à la validation du SDK Google ; seules les frontières réseau et données météo sont simulées. SDK : `google-genai==2.21.0`.
 
 Ces résultats ne prouvent pas un démarrage HAOS, la qualité ou latence audio, un appel cloud réel, le choix d'outil par le modèle, ni une explication finale par un outil tiers. Le résolveur du contexte vocal dépend d'internes Home Assistant : si le contexte manque ou si plusieurs sessions sont ambiguës, l'appel reste anonyme.
 

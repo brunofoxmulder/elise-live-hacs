@@ -87,6 +87,13 @@ class GeminiLiveSession:
     async def send_tool_responses(
         self, responses: list[LiveToolResponse]
     ) -> None:
+        """Send tool results as JSON objects required by Gemini.
+
+        HA tools may return text, lists or scalar values (Weather Forecast
+        returns text). Preserve those values under ``result``; dictionaries
+        already satisfy the contract, including top-level error responses.
+        Both the voice and typed paths use this provider boundary.
+        """
         from google.genai import types  # noqa: PLC0415
 
         await self._session.send_tool_response(
@@ -94,7 +101,11 @@ class GeminiLiveSession:
                 types.FunctionResponse(
                     name=response.name,
                     id=response.call_id,
-                    response=response.response,
+                    response=(
+                        response.response
+                        if isinstance(response.response, dict)
+                        else {"result": response.response}
+                    ),
                 )
                 for response in responses
             ]
