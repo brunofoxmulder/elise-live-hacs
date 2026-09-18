@@ -32,6 +32,7 @@ from .const import (
     DEFAULT_TRANSCRIBE_GPT,
     DEFAULT_SHOW_TEXT,
     DOMAIN,
+    GEMINI_AUDIO_FIRST_MODELS,
     GEMINI_LIVE_TTS_PLACEHOLDER,
     GEMINI_SESSION_MANAGER_KEY,
     GEMINI_TURN_STORE_KEY,
@@ -260,7 +261,7 @@ class LiveModelConversationAgent(conversation.ConversationEntity):
         audio_response_chunks: list[bytes] = []
         resampled_pcm_chunks: list[bytes] = []
         wav_data = b""
-        native_audio_model = "native-audio" in (model or "")
+        native_audio_model = model in GEMINI_AUDIO_FIRST_MODELS
 
         _LOGGER.warning(
             "[turn=%s] conversation text path start model=%s voice=%s tools=%d text=%r",

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.0-dev.3 — 2026-09-18
+
+- Ajoute le modèle stable `gemini-3.8-live`, par défaut uniquement pour les nouvelles configurations ; les entrées existantes gardent leur modèle.
+- N'envoie aucun `thinking_level` ni `thinking_config`, conformément au guide Google.
+- Déclare les outils Gemini 3.8 en mode `BLOCKING` pour attendre le résultat Home Assistant avant la réponse.
+- Remplace la détection audio fondée sur le nom du modèle par des capacités explicites ; conserve Gemini 3.1/2.5 et OpenAI.
+- 53 tests hors production réussis ; recette cloud et audio réelle encore requise.
+
 ## 0.1.0-dev.2 — 2026-09-18
 
 - Corrige l'échec Gemini avec Weather Forecast et les autres outils retournant du texte, une liste ou une valeur simple. Le résultat est transmis comme objet JSON, commun aux chemins vocal et écrit.

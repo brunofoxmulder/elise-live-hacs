@@ -8,14 +8,14 @@
     "@brunofoxmulder"
   ],
   "config_flow": true,
-  "documentation": "https://github.com/brunofoxmulder/elise-live-hacs",
+  "documentation": "https://github.com/brunofoxmulder/elise-live",
   "integration_type": "service",
   "iot_class": "cloud_push",
-  "issue_tracker": "https://github.com/brunofoxmulder/elise-live-hacs/issues",
+  "issue_tracker": "https://github.com/brunofoxmulder/elise-live/issues",
   "requirements": [
     "google-genai==2.21.0"
   ],
-  "version": "0.1.0-dev.2",
+  "version": "0.1.0-dev.3",
   "dependencies": [
     "llm"
   ]

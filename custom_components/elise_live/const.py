@@ -13,7 +13,7 @@ CONF_TRANSCRIBE_GPT = "transcribe_gpt"
 CONF_ENCOURAGE_WEB_SEARCH = "encourage_web_search"
 CONF_SHOW_TEXT = "show_text"
 
-DEFAULT_MODEL = "gemini-3.1-flash-live-preview"
+DEFAULT_MODEL = "gemini-3.8-live"
 DEFAULT_VOICE = "Puck"
 DEFAULT_TRANSCRIBE_GEMINI = False
 DEFAULT_TRANSCRIBE_GPT = False
@@ -39,9 +39,23 @@ OPENAI_SYSTEM_INSTRUCTION = (
 )
 
 AVAILABLE_MODELS = [
+    "gemini-3.8-live",
     "gemini-3.1-flash-live-preview",
     "gemini-2.5-flash-native-audio-preview-12-2025",
 ]
+
+# Models whose audio response may arrive after an early turn-complete event.
+# Keep this capability explicit: stable model identifiers do not necessarily
+# contain the historical ``native-audio`` marker.
+GEMINI_AUDIO_FIRST_MODELS = {
+    "gemini-3.8-live",
+    "gemini-2.5-flash-native-audio-preview-12-2025",
+}
+
+# Gemini 3.8 defaults to asynchronous function calls. Elise Live executes HA
+# tools sequentially and returns their result before the spoken response, so
+# request Google's backwards-compatible blocking behavior for this model.
+GEMINI_BLOCKING_TOOL_MODELS = {"gemini-3.8-live"}
 
 OPENAI_DEFAULT_MODEL = "gpt-realtime-2.1"
 OPENAI_DEFAULT_VOICE = "marin"

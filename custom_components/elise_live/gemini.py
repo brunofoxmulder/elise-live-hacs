@@ -7,6 +7,7 @@ from collections.abc import AsyncIterator
 from contextlib import AbstractAsyncContextManager
 from typing import Any
 
+from .const import GEMINI_BLOCKING_TOOL_MODELS
 from .live import LiveConfig, LiveEvent, LiveTool, LiveToolCall, LiveToolResponse
 
 _SUPPORTED_SCHEMA_KEYS = {
@@ -167,17 +168,26 @@ def _gemini_config(config: LiveConfig) -> dict[str, Any]:
         result["output_audio_transcription"] = {}
     if config.tools:
         result["tools"] = [
-            {"function_declarations": [_gemini_tool(tool)]}
+            {
+                "function_declarations": [
+                    _gemini_tool(
+                        tool,
+                        blocking=config.model in GEMINI_BLOCKING_TOOL_MODELS,
+                    )
+                ]
+            }
             for tool in config.tools
         ]
     return result
 
 
-def _gemini_tool(tool: LiveTool) -> dict[str, Any]:
+def _gemini_tool(tool: LiveTool, *, blocking: bool = False) -> dict[str, Any]:
     declaration: dict[str, Any] = {
         "name": tool.name,
         "description": tool.description,
     }
+    if blocking:
+        declaration["behavior"] = "BLOCKING"
     if tool.parameters:
         declaration["parameters"] = _gemini_schema(tool.parameters)
     return declaration

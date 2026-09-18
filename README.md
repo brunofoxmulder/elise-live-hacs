@@ -2,7 +2,7 @@
 
 Intégration vocale Home Assistant pour **Gemini Live** et **OpenAI Realtime**, avec sélection de plusieurs API LLM Home Assistant.
 
-**Version de test : 0.1.0-dev.2.** Corrige l'échec de restitution des prévisions météo par Gemini. Cette candidate nécessite une recette sur l'installation cible avant un usage habituel.
+**Version de test : 0.1.0-dev.3.** Ajoute le modèle stable `gemini-3.8-live` conformément aux recommandations de migration Google. La dev.2 reste le retour arrière validé pendant la recette terrain de cette candidate.
 
 Variante indépendante de [ha-gemini-live](https://github.com/matt123p/ha-gemini-live), basée sur **v1.0.7**, sous licence MIT de Matt Pyne. Ce projet communautaire n'est affilié ni à Google, ni à OpenAI, ni à Home Assistant.
 
@@ -12,7 +12,9 @@ Variante indépendante de [ha-gemini-live](https://github.com/matt123p/ha-gemini
 - Raccorder notamment **Tools for Assist** : Search Services et Weather Forecast, en plus d'Assist.
 - Utiliser la fusion native Home Assistant des outils, schémas, instructions et appels.
 - Préserver le contexte du pipeline vocal lorsqu'il est disponible sans ambiguïté. Une origine inconnue reste inconnue ; aucune identité humaine n'est inventée.
-- Conserver les transports audio Gemini et OpenAI de la base amont.
+- Proposer `gemini-3.8-live` par défaut aux nouvelles entrées, tout en conservant Gemini 3.1 et 2.5 pour le repli.
+- Appliquer le contrat Gemini 3.8 : sortie audio, aucun `thinking_level`, et appels d'outils bloquants jusqu'au résultat Home Assistant.
+- Conserver le transport OpenAI de la base amont.
 
 Le domaine `elise_live` permet de conserver `gemini_live` installé en parallèle. Les entrées, clés et assistants existants ne sont pas migrés automatiquement. Une sélection vide désactive les outils Home Assistant ; les callbacks de fin de conversation et d'affichage restent disponibles.
 
@@ -37,9 +39,9 @@ Conserver l'assistant d'origine pendant les essais. Ce dépôt de distribution u
 
 ## Validation et limites
 
-49 tests hors production ont réussi sous Python 3.14.7 et Home Assistant 2026.9.2 (45 intégration, 4 installateur). Ils couvrent la sélection/fusion/dispatch des outils, les chemins texte et audio avec fournisseurs simulés, et la préservation du contexte. Le contrôle Tools for Assist emploie son code **1.10.2** inchangé et vérifie aussi le retour météo jusqu'à la validation du SDK Google ; seules les frontières réseau et données météo sont simulées. SDK : `google-genai==2.21.0`.
+53 tests hors production ont réussi sous Python 3.14.7 et Home Assistant 2026.9.2 (49 intégration, 4 installateur). Ils couvrent aussi le catalogue Gemini 3.8, sa capacité audio explicite, le mode d'outil `BLOCKING` accepté par le SDK et l'absence des paramètres Thinking non pris en charge. Le contrôle Tools for Assist emploie son code **1.10.2** inchangé ; seules les frontières réseau et données météo sont simulées. SDK : `google-genai==2.21.0`.
 
-Ces résultats ne prouvent pas un démarrage HAOS, la qualité ou latence audio, un appel cloud réel, le choix d'outil par le modèle, ni une explication finale par un outil tiers. Le résolveur du contexte vocal dépend d'internes Home Assistant : si le contexte manque ou si plusieurs sessions sont ambiguës, l'appel reste anonyme.
+Ces résultats ne prouvent pas encore la connexion cloud, la qualité ou latence audio de Gemini 3.8, le choix d'outil par le modèle, ni une explication finale par un outil tiers. Le résolveur du contexte vocal dépend d'internes Home Assistant : si le contexte manque ou si plusieurs sessions sont ambiguës, l'appel reste anonyme.
 
 Pour une recette : vérifier un véritable appel de recherche, une prévision météo, une commande simple autorisée, sa provenance, une relance vocale et le retour à l'assistant d'origine. Les mises à jour proposées dans HACS doivent être examinées avant installation.
 

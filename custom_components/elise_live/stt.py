@@ -50,6 +50,7 @@ from .const import (
     DEFAULT_SYSTEM_INSTRUCTION,
     DEFAULT_SHOW_TEXT,
     DOMAIN,
+    GEMINI_AUDIO_FIRST_MODELS,
     GEMINI_LIVE_TTS_PLACEHOLDER,
     GEMINI_SESSION_MANAGER_KEY,
     GEMINI_TURN_STORE_KEY,
@@ -543,7 +544,7 @@ class LiveModelSTT(SpeechToTextEntity):
             transcribe_output,
         )
 
-        native_audio_model = "native-audio" in (model or "")
+        native_audio_model = model in GEMINI_AUDIO_FIRST_MODELS
         _LOGGER.warning(
             "[turn=%s] setup model=%s native_audio_model=%s tools=%d",
             turn_id,
