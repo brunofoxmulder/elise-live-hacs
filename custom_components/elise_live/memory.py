@@ -84,7 +84,7 @@ def add_memory_instruction(
 ) -> str:
     """Append stable memory/tool guidance and optional wake-cycle greeting context."""
     parts = [system_instruction, _MEMORY_TOOL_INSTRUCTION]
-    if opening is not None and opening.should_greet:
+    if opening is not None and opening.should_greet and not opening.committed:
         parts.append(
             "Deterministic opening context from Élise Memory: this is the first conversation "
             f"since the current wake cycle began at {opening.wake_at}. On the FIRST assistant "
@@ -203,10 +203,12 @@ class MemoryBridge:
         )
         if status == 204:
             opening.committed = True
+            opening.should_greet = False
             return True
         if status == 409:
             # The wake cycle changed; the old greeting decision is no longer applicable.
             opening.committed = True
+            opening.should_greet = False
         return False
 
     async def _request(

@@ -133,8 +133,14 @@ class MemoryBridgeTests(unittest.IsolatedAsyncioTestCase):
         opening = await bridge.async_open("conversation-1")
         self.assertTrue(opening.should_greet)
         self.assertTrue(await bridge.async_commit_greeting("conversation-1"))
+        self.assertTrue(opening.committed)
+        self.assertFalse(opening.should_greet)
+        self.assertNotIn("Bonjour mon cœur", add_memory_instruction("base", opening))
         self.assertFalse(await bridge.async_commit_greeting("conversation-1"))
 
+        cached = await bridge.async_open("conversation-1")
+        self.assertIs(cached, opening)
+        self.assertFalse(cached.should_greet)
         self.assertEqual(len(session.calls), 2)
         method, url, kwargs = session.calls[1]
         self.assertEqual(method, "POST")

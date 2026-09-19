@@ -2,7 +2,7 @@
 
 Intégration vocale Home Assistant pour **Gemini Live** et **OpenAI Realtime**, avec sélection de plusieurs API LLM Home Assistant.
 
-**Version de test : 0.1.0-dev.4.** Ajoute le pont local vers Élise Memory tout en conservant les chemins Home Assistant, Investigator, Gemini Live et OpenAI Realtime existants. Le point de retour arrière avant Memory est la branche `rollback-elise-live-dev3-pre-memory` (dev.3).
+**Version de test : 0.1.0-dev.5.** Corrige le salut de réveil pour qu’il ne soit injecté qu’une seule fois après son commit, tout en conservant le pont local Élise Memory de la dev.4. Le point de retour arrière avant Memory reste la branche `rollback-elise-live-dev3-pre-memory` (dev.3).
 
 Variante indépendante de [ha-gemini-live](https://github.com/matt123p/ha-gemini-live), basée sur **v1.0.7**, sous licence MIT de Matt Pyne. Ce projet communautaire n'est affilié ni à Google, ni à OpenAI, ni à Home Assistant.
 
@@ -22,7 +22,7 @@ Le domaine `elise_live` permet de conserver `gemini_live` installé en parallèl
 
 ## Installation HACS
 
-Prérequis : **Home Assistant 2026.9.2 ou plus récent**, HACS et une clé API du fournisseur choisi. Pour les fonctions de mémoire dev.4, l’App Élise Memory doit être installée et démarrée sur le même Home Assistant ; son indisponibilité ne bloque pas Élise Live. Les outils de recherche et de météo nécessitent leurs intégrations configurées séparément.
+Prérequis : **Home Assistant 2026.9.2 ou plus récent**, HACS et une clé API du fournisseur choisi. Pour les fonctions de mémoire dev.5, l’App Élise Memory doit être installée et démarrée sur le même Home Assistant ; son indisponibilité ne bloque pas Élise Live. Les outils de recherche et de météo nécessitent leurs intégrations configurées séparément.
 
 1. Disposer d'une sauvegarde récente.
 2. Dans **HACS → ⋮ → Dépôts personnalisés**, ajouter :
