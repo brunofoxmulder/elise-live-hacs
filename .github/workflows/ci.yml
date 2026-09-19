@@ -26,5 +26,5 @@ jobs:
           python - <<'PY'
           import json
           manifest=json.load(open("custom_components/elise_live/manifest.json", encoding="utf-8"))
-          assert manifest["version"] == "0.1.0-dev.4", manifest
+          assert manifest["version"] == "0.1.0-dev.5", manifest
           PY
