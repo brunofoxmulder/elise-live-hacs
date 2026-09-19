@@ -108,7 +108,7 @@ class MemoryBridge:
         session: Any,
         *,
         base_url: str = DEFAULT_MEMORY_BASE_URL,
-        timeout: float = 2.0,
+        timeout: float = 1.0,
     ) -> None:
         self._session = session
         self._base_url = base_url.rstrip("/")
