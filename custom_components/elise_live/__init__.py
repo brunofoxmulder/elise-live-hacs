@@ -3,18 +3,15 @@
 import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import (
     CONF_DETAILED_LOGGING,
     DOMAIN,
     GEMINI_SESSION_MANAGER_KEY,
     GEMINI_TURN_STORE_KEY,
-    MEMORY_BRIDGE_KEY,
 )
 from . import stt, tts, conversation
 from .runtime import LiveSessionManager, TurnStore
-from .memory import MemoryBridge
 from .utils import set_detailed_logging
 
 _LOGGER = logging.getLogger(__name__)
@@ -32,7 +29,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         **entry.options,
         GEMINI_SESSION_MANAGER_KEY: LiveSessionManager(),
         GEMINI_TURN_STORE_KEY: TurnStore(),
-        MEMORY_BRIDGE_KEY: MemoryBridge(async_get_clientsession(hass)),
     }
 
     # Register options update listener to reload integration when changed
