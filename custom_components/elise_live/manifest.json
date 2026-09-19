@@ -15,7 +15,7 @@
   "requirements": [
     "google-genai==2.21.0"
   ],
-  "version": "0.1.0-dev.5",
+  "version": "0.1.0-dev.3",
   "dependencies": [
     "llm"
   ]
