@@ -54,17 +54,10 @@ from .const import (
     GEMINI_LIVE_TTS_PLACEHOLDER,
     GEMINI_SESSION_MANAGER_KEY,
     GEMINI_TURN_STORE_KEY,
-    MEMORY_BRIDGE_KEY,
     OPENAI_SYSTEM_INSTRUCTION,
     PROVIDER_GEMINI,
     PROVIDER_OPENAI,
     SUPPORTED_LANGUAGES,
-)
-from .memory import (
-    MEMORY_SEARCH_TOOL_NAME,
-    add_memory_instruction,
-    add_memory_tool,
-    assistant_confirms_wake_greeting,
 )
 from .openai import OpenAIRealtimeClient
 from .runtime import (
@@ -436,8 +429,6 @@ class LiveModelSTT(SpeechToTextEntity):
         started_at = time.monotonic()
         entry_data = self.hass.data[self.integration_domain][self.entry.entry_id]
         session_manager = entry_data[self.session_manager_key]
-        memory_bridge = entry_data[MEMORY_BRIDGE_KEY]
-        memory_opening = await memory_bridge.async_open(conversation_id)
         if await session_manager.async_prepare_for_new_turn(conversation_id):
             _LOGGER.info(
                 "[turn=%s] cancelled unfinished provider turn for conversation %s",
@@ -508,7 +499,6 @@ class LiveModelSTT(SpeechToTextEntity):
         system_instruction = _add_end_conversation_instruction(system_instruction)
         if not transcribe_output and show_text:
             system_instruction = _add_show_text_instruction(system_instruction)
-        system_instruction = add_memory_instruction(system_instruction, memory_opening)
 
         live_tools = _add_end_conversation_tool(
             _format_tools_for_live(
@@ -521,7 +511,6 @@ class LiveModelSTT(SpeechToTextEntity):
         )
         if not transcribe_output and show_text:
             live_tools = _add_show_text_tool(live_tools)
-        live_tools = add_memory_tool(live_tools)
         _LOGGER.debug(
             "Exposing %d tools to the live model: %s",
             len(live_tools),
@@ -538,15 +527,12 @@ class LiveModelSTT(SpeechToTextEntity):
             len(live_tools),
             len(system_instruction),
         )
-        provider_transcription = transcribe_output or bool(
-            memory_opening is not None and memory_opening.should_greet
-        )
         live_config = LiveConfig(
             model=model,
             voice=voice,
             system_instruction=system_instruction,
             tools=live_tools,
-            transcribe_output=provider_transcription,
+            transcribe_output=transcribe_output,
         )
 
         _LOGGER.warning(
@@ -757,10 +743,6 @@ class LiveModelSTT(SpeechToTextEntity):
                                         "success": True,
                                         "displayed": True,
                                     }
-                                elif tool_name == MEMORY_SEARCH_TOOL_NAME:
-                                    tool_result = await memory_bridge.async_search(
-                                        str(tool_args.get("query", ""))
-                                    )
                                 elif llm_api is not None:
                                     try:
                                         tool_input = llm.ToolInput(
@@ -1036,13 +1018,6 @@ class LiveModelSTT(SpeechToTextEntity):
         response_text = "".join(text_response_parts)
         input_transcript = "".join(input_transcript_parts).strip()
         all_audio_24k_len = audio_response_bytes
-
-        if (
-            memory_opening is not None
-            and memory_opening.should_greet
-            and assistant_confirms_wake_greeting(response_text)
-        ):
-            await memory_bridge.async_commit_greeting(conversation_id)
 
         if first_audio.is_set():
             _LOGGER.warning(
