@@ -2,7 +2,7 @@
 
 Intégration vocale Home Assistant pour **Gemini Live** et **OpenAI Realtime**, avec sélection de plusieurs API LLM Home Assistant.
 
-**Version de test : 0.1.0-dev.5.** Corrige le salut de réveil pour qu’il ne soit injecté qu’une seule fois après son commit, tout en conservant le pont local Élise Memory de la dev.4. Le point de retour arrière avant Memory reste la branche `rollback-elise-live-dev3-pre-memory` (dev.3).
+**Version de test : 0.1.0-dev.3.** Ajoute le modèle stable `gemini-3.8-live` conformément aux recommandations de migration Google. La dev.2 reste le retour arrière validé pendant la recette terrain de cette candidate.
 
 Variante indépendante de [ha-gemini-live](https://github.com/matt123p/ha-gemini-live), basée sur **v1.0.7**, sous licence MIT de Matt Pyne. Ce projet communautaire n'est affilié ni à Google, ni à OpenAI, ni à Home Assistant.
 
@@ -15,14 +15,12 @@ Variante indépendante de [ha-gemini-live](https://github.com/matt123p/ha-gemini
 - Proposer `gemini-3.8-live` par défaut aux nouvelles entrées, tout en conservant Gemini 3.1 et 2.5 pour le repli.
 - Appliquer le contrat Gemini 3.8 : sortie audio, aucun `thinking_level`, et appels d'outils bloquants jusqu'au résultat Home Assistant.
 - Conserver le transport OpenAI de la base amont.
-- Interroger Élise Memory à la demande via `elise_memory_search`, sans injecter toute la base SQLite dans chaque conversation.
-- Lire le contexte de début de conversation depuis Élise Memory pour le salut de réveil, avec échec non bloquant si Memory est indisponible.
 
 Le domaine `elise_live` permet de conserver `gemini_live` installé en parallèle. Les entrées, clés et assistants existants ne sont pas migrés automatiquement. Une sélection vide désactive les outils Home Assistant ; les callbacks de fin de conversation et d'affichage restent disponibles.
 
 ## Installation HACS
 
-Prérequis : **Home Assistant 2026.9.2 ou plus récent**, HACS et une clé API du fournisseur choisi. Pour les fonctions de mémoire dev.5, l’App Élise Memory doit être installée et démarrée sur le même Home Assistant ; son indisponibilité ne bloque pas Élise Live. Les outils de recherche et de météo nécessitent leurs intégrations configurées séparément.
+Prérequis : **Home Assistant 2026.9.2 ou plus récent**, HACS et une clé API du fournisseur choisi. Les tests de cette candidate ont été exécutés avec HA 2026.9.2 ; la compatibilité avec une version ultérieure reste à vérifier. Les outils de recherche et de météo nécessitent leurs intégrations configurées séparément.
 
 1. Disposer d'une sauvegarde récente.
 2. Dans **HACS → ⋮ → Dépôts personnalisés**, ajouter :
