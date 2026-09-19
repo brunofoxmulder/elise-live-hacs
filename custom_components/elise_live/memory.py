@@ -67,6 +67,17 @@ def memory_search_tool() -> LiveTool:
     )
 
 
+def add_memory_tool(tools: list[LiveTool]) -> list[LiveTool]:
+    """Append the internal memory tool without shadowing an existing tool."""
+    if any(tool.name == MEMORY_SEARCH_TOOL_NAME for tool in tools):
+        _LOGGER.warning(
+            "Tool name %s already exists; Élise Memory search will not be added",
+            MEMORY_SEARCH_TOOL_NAME,
+        )
+        return tools
+    return [*tools, memory_search_tool()]
+
+
 def add_memory_instruction(
     system_instruction: str,
     opening: MemoryOpening | None,
