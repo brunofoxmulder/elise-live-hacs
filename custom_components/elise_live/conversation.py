@@ -36,7 +36,6 @@ from .const import (
     GEMINI_LIVE_TTS_PLACEHOLDER,
     GEMINI_SESSION_MANAGER_KEY,
     GEMINI_TURN_STORE_KEY,
-    MEMORY_BRIDGE_KEY,
     OPENAI_SYSTEM_INSTRUCTION,
     PROVIDER_GEMINI,
     PROVIDER_OPENAI,
@@ -53,12 +52,6 @@ from .stt import (
     SHOW_TEXT_TOOL_NAME,
     _add_show_text_instruction,
     _add_show_text_tool,
-)
-from .memory import (
-    MEMORY_SEARCH_TOOL_NAME,
-    add_memory_instruction,
-    add_memory_tool,
-    assistant_confirms_wake_greeting,
 )
 from .openai import OpenAIRealtimeClient
 from .runtime import AudioStream, new_conversation_id
@@ -249,16 +242,10 @@ class LiveModelConversationAgent(conversation.ConversationEntity):
             _LOGGER.error("API key not configured for %s", self.integration_name)
             return None
 
-        entry_data = self.hass.data[self.integration_domain][self.entry.entry_id]
-        memory_bridge = entry_data[MEMORY_BRIDGE_KEY]
-        memory_opening = await memory_bridge.async_open(conversation_id)
-
         llm_api, live_tools, system_instruction = await self._async_get_llm_api(
             user_input.as_llm_context(self.integration_domain)
         )
-        system_instruction = add_memory_instruction(system_instruction, memory_opening)
-        live_tools = add_memory_tool(live_tools)
-
+        entry_data = self.hass.data[self.integration_domain][self.entry.entry_id]
         session_manager = entry_data[self.session_manager_key]
         turn_store = entry_data[self.turn_store_key]
 
@@ -325,10 +312,6 @@ class LiveModelConversationAgent(conversation.ConversationEntity):
                                         "success": True,
                                         "displayed": True,
                                     }
-                                elif tool_name == MEMORY_SEARCH_TOOL_NAME:
-                                    tool_result = await memory_bridge.async_search(
-                                        str(tool_args.get("query", ""))
-                                    )
                                 elif llm_api is not None:
                                     try:
                                         tool_result = await llm_api.async_call_tool(
@@ -408,13 +391,6 @@ class LiveModelConversationAgent(conversation.ConversationEntity):
         if not assistant_text:
             _LOGGER.error("[turn=%s] live-model text path returned no usable text", turn_id)
             return None
-
-        if (
-            memory_opening is not None
-            and memory_opening.should_greet
-            and assistant_confirms_wake_greeting(assistant_text)
-        ):
-            await memory_bridge.async_commit_greeting(conversation_id)
 
         turn_store.add_audio(assistant_text, wav_data)
 
