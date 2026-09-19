@@ -207,3 +207,4 @@ AVAILABLE_VOICES: list[str] = list(dict.fromkeys(name for name, _, _ in AVAILABL
 # Runtime objects stored under hass.data[DOMAIN][config_entry_id].
 GEMINI_SESSION_MANAGER_KEY = "session_manager"
 GEMINI_TURN_STORE_KEY = "turn_store"
+MEMORY_BRIDGE_KEY = "memory_bridge"
