@@ -16,6 +16,7 @@ _LOGGER = logging.getLogger(__name__)
 # This stays on the Supervisor network; no LAN address or Google identifier is used.
 DEFAULT_MEMORY_BASE_URL = "http://d37d49e7-elise-memory:8099"
 MEMORY_SEARCH_TOOL_NAME = "elise_memory_search"
+MEMORY_RESOLVE_TOOL_NAME = "elise_memory_resolve_entity"
 _MAX_OPENINGS = 128
 _MAX_VALUE_CHARS = 1600
 
@@ -23,8 +24,11 @@ _MEMORY_TOOL_INSTRUCTION = (
     "A local deterministic house-memory tool named elise_memory_search is available. "
     "Use it when the user asks about durable Maison Cognitive knowledge: configuration, "
     "automations, scripts, functional relationships, documented house behavior, or remembered "
-    "facts. Do not use it for direct device control or for a current device state; use the "
-    "Home Assistant tools for those. For a question asking why an entity is currently in its "
+    "facts. For direct device control, use Home Assistant directly when the target is clear. "
+    "If the requested house object cannot be found or the target is ambiguous, call "
+    "elise_memory_resolve_entity with the user's natural object name, then use the returned "
+    "exact current Home Assistant entity only when resolved=true. Never guess between candidates. "
+    "For a current device state, use the Home Assistant tools. For a question asking why an entity is currently in its "
     "state, prefer the dedicated Investigator tool when it is available. Never invent a memory "
     "fact when elise_memory_search can check it."
 )
@@ -67,6 +71,28 @@ def memory_search_tool() -> LiveTool:
     )
 
 
+def memory_resolve_tool() -> LiveTool:
+    """Return the provider-neutral target-resolution tool declaration."""
+    return LiveTool(
+        name=MEMORY_RESOLVE_TOOL_NAME,
+        description=(
+            "Resolve a natural house-object name to a current Home Assistant entity when "
+            "device control cannot find a target or remains ambiguous. This tool never "
+            "executes a command. Use the entity only when resolved is true."
+        ),
+        parameters={
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Natural object name from the user, for example 'lampe salon'.",
+                }
+            },
+            "required": ["query"],
+        },
+    )
+
+
 def add_memory_tool(tools: list[LiveTool]) -> list[LiveTool]:
     """Append the internal memory tool without shadowing an existing tool."""
     if any(tool.name == MEMORY_SEARCH_TOOL_NAME for tool in tools):
@@ -75,7 +101,14 @@ def add_memory_tool(tools: list[LiveTool]) -> list[LiveTool]:
             MEMORY_SEARCH_TOOL_NAME,
         )
         return tools
-    return [*tools, memory_search_tool()]
+    result = [*tools, memory_search_tool()]
+    if any(tool.name == MEMORY_RESOLVE_TOOL_NAME for tool in result):
+        _LOGGER.warning(
+            "Tool name %s already exists; Élise Memory resolver will not be added",
+            MEMORY_RESOLVE_TOOL_NAME,
+        )
+        return result
+    return [*result, memory_resolve_tool()]
 
 
 def add_memory_instruction(
@@ -188,6 +221,39 @@ class MemoryBridge:
             "query": normalized,
             "knowledge": knowledge,
             "relations": relations,
+        }
+
+    async def async_resolve_entity(self, query: str, *, limit: int = 5) -> dict[str, Any]:
+        """Resolve a natural object name against the current HA registry via Memory."""
+        normalized = " ".join((query or "").split()).strip()
+        if not normalized:
+            return {"available": True, "query": query, "resolved": None, "reason": "empty_query", "candidates": []}
+
+        status, payload = await self._request(
+            "GET",
+            "/v1/resolve/entity",
+            params={"q": normalized, "limit": max(1, min(int(limit), 8))},
+        )
+        if status != 200 or not isinstance(payload, dict):
+            return {"available": False, "error": "elise_memory_unavailable"}
+
+        candidates = []
+        for row in payload.get("candidates", [])[:8]:
+            if isinstance(row, dict):
+                candidates.append({key: row.get(key) for key in ("entity_id", "name", "domain", "state", "score", "provenance")})
+
+        resolved = payload.get("resolved")
+        if isinstance(resolved, dict):
+            resolved = {key: resolved.get(key) for key in ("entity_id", "name", "domain", "state", "score", "provenance")}
+        else:
+            resolved = None
+
+        return {
+            "available": True,
+            "query": normalized,
+            "resolved": resolved,
+            "reason": payload.get("reason"),
+            "candidates": candidates,
         }
 
     async def async_commit_greeting(self, conversation_id: str) -> bool:
