@@ -62,6 +62,7 @@ from .const import (
 )
 from .memory import (
     MEMORY_SEARCH_TOOL_NAME,
+    MEMORY_RESOLVE_TOOL_NAME,
     add_memory_instruction,
     add_memory_tool,
     assistant_confirms_wake_greeting,
@@ -759,6 +760,10 @@ class LiveModelSTT(SpeechToTextEntity):
                                     }
                                 elif tool_name == MEMORY_SEARCH_TOOL_NAME:
                                     tool_result = await memory_bridge.async_search(
+                                        str(tool_args.get("query", ""))
+                                    )
+                                elif tool_name == MEMORY_RESOLVE_TOOL_NAME:
+                                    tool_result = await memory_bridge.async_resolve_entity(
                                         str(tool_args.get("query", ""))
                                     )
                                 elif llm_api is not None:
