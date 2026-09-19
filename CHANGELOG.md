@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-dev.5 — 2026-09-19
+
+- Corrige la répétition du salut de réveil dans une même conversation après son enregistrement.
+- Après un commit réussi, le contexte mis en cache passe immédiatement à `should_greet=false` et l’instruction « Bonjour mon cœur » n’est plus réinjectée aux tours suivants.
+- Ajoute un test de non-régression couvrant le cache de conversation après commit.
+- Aucun changement du moteur de commandes Home Assistant, d’Investigator ou de la recherche Élise Memory.
+
 ## 0.1.0-dev.4 — 2026-09-19
 
 - Ajoute un pont local fail-safe vers l’App Élise Memory sur le réseau interne Home Assistant.
