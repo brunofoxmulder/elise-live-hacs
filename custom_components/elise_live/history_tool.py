@@ -184,14 +184,10 @@ async def async_handle_history_tool(
         raise ValueError("entity_id must be an exact Home Assistant entity_id")
 
     start, end = _window(hass, args)
-    query_start = start
-    if operation == "value_at":
-        query_start = start - timedelta(days=MAX_HISTORY_DAYS)
-
     def _read() -> dict[str, list[State]]:
         return history.state_changes_during_period(
             hass,
-            query_start,
+            start,
             end,
             entity_id=entity_id,
             no_attributes=True,
@@ -201,8 +197,9 @@ async def async_handle_history_tool(
     result = await get_instance(hass).async_add_executor_job(_read)
     states = result.get(entity_id.lower(), [])
     if operation == "value_at":
-        states = [state for state in states if state.last_updated <= start]
-        states = states[-1:] if states else []
+        # Recorder's include_start_time_state supplies the state in force at
+        # start, even when its last change predates the requested instant.
+        states = states[:1]
     return {
         "entity_id": entity_id,
         "operation": operation,
