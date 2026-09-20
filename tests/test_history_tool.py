@@ -123,3 +123,14 @@ def test_last_change_ignores_duplicate_target_samples():
         BASE + timedelta(hours=1),
     )
     assert result["change"]["time"] == (BASE + timedelta(minutes=30)).isoformat()
+
+
+def test_value_at_uses_recorder_start_state():
+    """The value at an instant is the start-state supplied by Recorder."""
+    result = _compute(
+        {"operation": "value_at"},
+        [_state("21.5", 0)],
+        BASE,
+        BASE + timedelta(microseconds=1),
+    )
+    assert result["value"]["state"] == "21.5"
