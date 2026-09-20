@@ -33,6 +33,11 @@ from homeassistant.helpers.issue_registry import (
 
 from .gemini import GeminiLiveClient, async_create_gemini_client
 from .live import LiveConfig, LiveTool, LiveToolResponse
+from .history_tool import (
+    HISTORY_TOOL_NAME,
+    add_history_tool,
+    async_handle_history_tool,
+)
 from .const import (
     CONF_API_KEY,
     CONF_DETAILED_LOGGING,
@@ -511,6 +516,7 @@ class LiveModelSTT(SpeechToTextEntity):
         )
         if not transcribe_output and show_text:
             live_tools = _add_show_text_tool(live_tools)
+        live_tools = add_history_tool(live_tools)
         _LOGGER.debug(
             "Exposing %d tools to the live model: %s",
             len(live_tools),
@@ -743,6 +749,14 @@ class LiveModelSTT(SpeechToTextEntity):
                                         "success": True,
                                         "displayed": True,
                                     }
+                                elif tool_name == HISTORY_TOOL_NAME:
+                                    try:
+                                        tool_result = await async_handle_history_tool(
+                                            self.hass, tool_args
+                                        )
+                                    except Exception as err:  # noqa: BLE001
+                                        _LOGGER.error("History tool failed: %s", err)
+                                        tool_result = {"error": str(err)}
                                 elif llm_api is not None:
                                     try:
                                         tool_input = llm.ToolInput(
