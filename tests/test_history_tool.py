@@ -74,3 +74,23 @@ def test_statistics_time_weighted_average():
     assert stats["min"] == 10
     assert stats["max"] == 20
     assert stats["average"] == 17.5
+
+
+def test_count_ignores_duplicate_target_samples():
+    result = _compute(
+        {"operation": "count", "target_state": "on"},
+        [_state("off", 0), _state("on", 10), _state("on", 15), _state("off", 20), _state("on", 30)],
+        BASE,
+        BASE + timedelta(hours=1),
+    )
+    assert result["count"] == 2
+
+
+def test_last_change_ignores_duplicate_target_samples():
+    result = _compute(
+        {"operation": "last_change", "target_state": "on"},
+        [_state("off", 0), _state("on", 10), _state("on", 15), _state("off", 20), _state("on", 30)],
+        BASE,
+        BASE + timedelta(hours=1),
+    )
+    assert result["change"]["time"] == (BASE + timedelta(minutes=30)).isoformat()
