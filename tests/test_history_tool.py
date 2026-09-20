@@ -33,6 +33,7 @@ sys.modules[_SPEC.name] = _MODULE
 assert _SPEC.loader is not None
 _SPEC.loader.exec_module(_MODULE)
 _compute = _MODULE._compute
+_window = _MODULE._window
 add_history_tool = _MODULE.add_history_tool
 HISTORY_TOOL_NAME = _MODULE.HISTORY_TOOL_NAME
 
@@ -164,3 +165,68 @@ def test_text_and_voice_paths_expose_and_dispatch_get_history():
     assert exposure in stt_source
     assert dispatch in stt_source
     assert handler in stt_source
+
+
+class _Config:
+    time_zone = "Europe/Paris"
+
+
+class _Hass:
+    config = _Config()
+
+
+def test_window_rejects_more_than_ten_days():
+    import pytest
+    with pytest.raises(ValueError, match="cannot exceed 10 days"):
+        _window(
+            _Hass(),
+            {
+                "operation": "states",
+                "start_time": "2026-09-01T00:00:00+02:00",
+                "end_time": "2026-09-12T00:00:00+02:00",
+            },
+        )
+
+
+def test_window_defaults_to_one_day():
+    start, end = _window(_Hass(), {"operation": "states"})
+    assert end - start == timedelta(days=1)
+
+
+def test_window_naive_time_uses_ha_timezone():
+    start, end = _window(
+        _Hass(),
+        {
+            "operation": "states",
+            "start_time": "2026-09-20T10:00:00",
+            "end_time": "2026-09-20T11:00:00",
+        },
+    )
+    assert start.isoformat() == "2026-09-20T08:00:00+00:00"
+    assert end.isoformat() == "2026-09-20T09:00:00+00:00"
+
+
+def test_count_without_target_counts_transitions():
+    states = [
+        _state("off", 0),
+        _state("on", 10),
+        _state("off", 20),
+    ]
+    result = _compute(
+        {"operation": "count"},
+        states,
+        BASE,
+        BASE + timedelta(seconds=30),
+    )
+    assert result["count"] == 2
+    assert result["target_state"] is None
+
+
+def test_empty_history_is_safe():
+    result = _compute(
+        {"operation": "states"},
+        [],
+        BASE,
+        BASE + timedelta(hours=1),
+    )
+    assert result == {"states": [], "truncated": False}
