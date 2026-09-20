@@ -12,7 +12,6 @@ from homeassistant.util import dt as dt_util
 from .live import LiveTool
 
 HISTORY_TOOL_NAME = "GetHistory"
-MAX_HISTORY_DAYS = 10
 _VALID_OPERATIONS = {"states", "last_change", "count", "duration", "value_at", "statistics"}
 
 HISTORY_TOOL = LiveTool(
@@ -20,8 +19,7 @@ HISTORY_TOOL = LiveTool(
     description=(
         "Read Home Assistant Recorder history for one exact entity_id. Use for historical "
         "questions such as when an entity changed, its states, transition count, time spent "
-        "in a state, a value at a time, or min/max/average over a period. Read-only. "
-        "The requested interval must be at most 10 days."
+        "in a state, a value at a time, or min/max/average over a period. Read-only."
     ),
     parameters={
         "type": "object",
@@ -69,8 +67,6 @@ def _window(hass: HomeAssistant, args: dict[str, Any]) -> tuple[datetime, dateti
     start = _parse_time(hass, args.get("start_time"), "start_time") if args.get("start_time") else end - timedelta(days=1)
     if end <= start:
         raise ValueError("end_time must be after start_time")
-    if end - start > timedelta(days=MAX_HISTORY_DAYS):
-        raise ValueError(f"History interval cannot exceed {MAX_HISTORY_DAYS} days")
     return start, end
 
 
