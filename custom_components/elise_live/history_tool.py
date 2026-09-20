@@ -23,7 +23,8 @@ HISTORY_TOOL = LiveTool(
         "entity by its natural Home Assistant name or alias, optionally narrowed by domain "
         "or area. Do not invent an entity_id. Use for historical questions such as when an "
         "entity changed, its states, transition count, time spent in a state, a value at a "
-        "time, min/max/average over Recorder states, or native long-term Statistics change "\n        "over a period (statistics_change), for example energy consumption in kWh. Read-only."
+        "time, min/max/average over Recorder states, or native long-term Statistics change "
+        "over a period (statistics_change), for example energy consumption in kWh. Read-only."
     ),
     parameters={
         "type": "object",
