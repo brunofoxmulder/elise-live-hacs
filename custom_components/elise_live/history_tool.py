@@ -110,11 +110,25 @@ def _compute(args: dict[str, Any], states: list[State], start: datetime, end: da
 
     transitions = states[1:] if len(states) > 1 else []
     if operation == "last_change":
-        matches = [state for state in transitions if target is None or state.state == target]
+        if target is None:
+            matches = transitions
+        else:
+            matches = [
+                state
+                for index, state in enumerate(states[1:], start=1)
+                if state.state == target and states[index - 1].state != target
+            ]
         return {"change": _serialize(matches[-1]) if matches else None}
 
     if operation == "count":
-        matches = [state for state in transitions if target is None or state.state == target]
+        if target is None:
+            matches = transitions
+        else:
+            matches = [
+                state
+                for index, state in enumerate(states[1:], start=1)
+                if state.state == target and states[index - 1].state != target
+            ]
         return {"count": len(matches), "target_state": target}
 
     if operation == "duration":
