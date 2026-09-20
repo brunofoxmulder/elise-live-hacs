@@ -45,6 +45,14 @@ Ces résultats ne prouvent pas encore la connexion cloud, la qualité ou latence
 
 Pour une recette : vérifier un véritable appel de recherche, une prévision météo, une commande simple autorisée, sa provenance, une relance vocale et le retour à l'assistant d'origine. Les mises à jour proposées dans HACS doivent être examinées avant installation.
 
+## État terrain — 20/09/2026
+
+Élise Live dev.4, commit `ff5382e` : instrumentation STT conservée. `GetHistory` a été validé sur plusieurs appels. La panne STT intermittente n'est pas causée par GetHistory ni par le mot « quand ».
+
+Sur un tour KO instrumenté (`a852d074`), l'audio complet et la fin de flux ont été envoyés, mais aucun événement Gemini n'a été reçu ; le chemin s'est terminé sur le timeout de 30 s. Sur un tour OK (`471dab12`), transcription et réponse ont été reçues, puis Investigator et GetHistory ont fonctionné jusqu'à `turnComplete`.
+
+L'hypothèse de travail actuelle est donc orientée vers le cycle de vie de session / transport Gemini Live. **La cause profonde n'est pas établie.** Décision : aucune correction fonctionnelle pour l'instant ; conserver l'instrumentation et accumuler des cas terrain OK/KO avant toute modification.
+
 ## Origine et licence
 
 Base amont : tag `v1.0.7`, commit `a5d71433060f6edc26bd15862aae3b2a1a7e98d6` de `matt123p/ha-gemini-live`. Le texte original de la licence MIT et son attribution sont conservés dans [LICENSE](LICENSE).
