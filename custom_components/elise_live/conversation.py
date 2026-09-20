@@ -216,6 +216,7 @@ class LiveModelConversationAgent(conversation.ConversationEntity):
             if not transcribe_output and show_text:
                 system_instruction = _add_show_text_instruction(system_instruction)
                 live_tools = _add_show_text_tool(live_tools)
+            live_tools = add_history_tool(live_tools)
             return (
                 None,
                 live_tools,
