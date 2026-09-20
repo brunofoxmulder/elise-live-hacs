@@ -6,7 +6,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from homeassistant.components.homeassistant.llm import async_get_exposed_entities
-from homeassistant.components.recorder import get_instance, history
+from homeassistant.components.recorder import get_instance, history, statistics as recorder_statistics
 from homeassistant.core import HomeAssistant, State
 from homeassistant.helpers import intent
 from homeassistant.util import dt as dt_util
@@ -14,7 +14,7 @@ from homeassistant.util import dt as dt_util
 from .live import LiveTool
 
 HISTORY_TOOL_NAME = "GetHistory"
-_VALID_OPERATIONS = {"states", "last_change", "count", "duration", "value_at", "statistics"}
+_VALID_OPERATIONS = {"states", "last_change", "count", "duration", "value_at", "statistics", "statistics_change"}
 
 HISTORY_TOOL = LiveTool(
     name=HISTORY_TOOL_NAME,
@@ -23,7 +23,7 @@ HISTORY_TOOL = LiveTool(
         "entity by its natural Home Assistant name or alias, optionally narrowed by domain "
         "or area. Do not invent an entity_id. Use for historical questions such as when an "
         "entity changed, its states, transition count, time spent in a state, a value at a "
-        "time, or min/max/average over a period. Read-only."
+        "time, min/max/average over Recorder states, or native long-term Statistics change "\n        "over a period (statistics_change), for example energy consumption in kWh. Read-only."
     ),
     parameters={
         "type": "object",
@@ -224,6 +224,56 @@ def _compute(args: dict[str, Any], states: list[State], start: datetime, end: da
     raise ValueError(f"Unsupported history operation: {operation}")
 
 
+def _serialize_stat_start(value: Any) -> str | Any:
+    """Serialize a statistics bucket start in Home Assistant local time."""
+    if isinstance(value, datetime):
+        return dt_util.as_local(value).isoformat()
+    if isinstance(value, (int, float)):
+        return dt_util.as_local(datetime.fromtimestamp(value, UTC)).isoformat()
+    return value
+
+
+def _statistics_change(
+    hass: HomeAssistant, entity_id: str, start: datetime, end: datetime
+) -> dict[str, Any]:
+    """Read native HA long-term Statistics change for local calendar days."""
+    # statistics_during_period(period="day") treats its end date as inclusive
+    # when aligning to local calendar days. GetHistory windows are [start, end),
+    # so move the exclusive end infinitesimally inside the requested window.
+    query_end = end - timedelta(microseconds=1)
+    result = recorder_statistics.statistics_during_period(
+        hass,
+        start,
+        query_end,
+        {entity_id},
+        "day",
+        None,
+        {"change"},
+    )
+    rows = result.get(entity_id, [])
+    buckets = [
+        {
+            "start": _serialize_stat_start(row.get("start")),
+            "change": row.get("change"),
+        }
+        for row in rows
+    ]
+    changes = [
+        float(row["change"])
+        for row in rows
+        if row.get("change") is not None
+    ]
+    state = hass.states.get(entity_id)
+    unit = state.attributes.get("unit_of_measurement") if state is not None else None
+    return {
+        "statistics_source": "home_assistant_long_term_statistics",
+        "period": "day",
+        "unit": unit,
+        "change": sum(changes) if changes else None,
+        "buckets": buckets,
+    }
+
+
 async def async_handle_history_tool(
     hass: HomeAssistant, args: dict[str, Any]
 ) -> dict[str, Any]:
@@ -234,6 +284,22 @@ async def async_handle_history_tool(
     entity_id = _resolve_entity_id(hass, args)
 
     start, end = _window(hass, args)
+
+    if operation == "statistics_change":
+        def _read_statistics() -> dict[str, Any]:
+            return _statistics_change(hass, entity_id, start, end)
+
+        statistics_result = await get_instance(hass).async_add_executor_job(
+            _read_statistics
+        )
+        return {
+            "entity_id": entity_id,
+            "operation": operation,
+            "start_time": start.isoformat(),
+            "end_time": end.isoformat(),
+            **statistics_result,
+        }
+
     def _read() -> dict[str, list[State]]:
         return history.state_changes_during_period(
             hass,
