@@ -5,8 +5,10 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from homeassistant.components.homeassistant.llm import async_get_exposed_entities
 from homeassistant.components.recorder import get_instance, history
 from homeassistant.core import HomeAssistant, State
+from homeassistant.helpers import intent
 from homeassistant.util import dt as dt_util
 
 from .live import LiveTool
@@ -17,15 +19,28 @@ _VALID_OPERATIONS = {"states", "last_change", "count", "duration", "value_at", "
 HISTORY_TOOL = LiveTool(
     name=HISTORY_TOOL_NAME,
     description=(
-        "Read Home Assistant Recorder history for one exact entity_id. Use for historical "
-        "questions such as when an entity changed, its states, transition count, time spent "
-        "in a state, a value at a time, or min/max/average over a period. Read-only."
+        "Read Home Assistant Recorder history for one Home Assistant entity. Identify the "
+        "entity by its natural Home Assistant name or alias, optionally narrowed by domain "
+        "or area. Do not invent an entity_id. Use for historical questions such as when an "
+        "entity changed, its states, transition count, time spent in a state, a value at a "
+        "time, or min/max/average over a period. Read-only."
     ),
     parameters={
         "type": "object",
         "properties": {
             "operation": {"type": "string", "enum": sorted(_VALID_OPERATIONS)},
-            "entity_id": {"type": "string", "description": "Exact Home Assistant entity_id."},
+            "name": {
+                "type": "string",
+                "description": "Home Assistant entity name or alias, for example volet salon.",
+            },
+            "domain": {
+                "type": "string",
+                "description": "Optional Home Assistant domain, for example cover or light.",
+            },
+            "area": {
+                "type": "string",
+                "description": "Optional Home Assistant area name.",
+            },
             "start_time": {"type": "string", "description": "ISO 8601 start time with timezone."},
             "end_time": {"type": "string", "description": "ISO 8601 end time with timezone."},
             "target_state": {
@@ -37,7 +52,7 @@ HISTORY_TOOL = LiveTool(
                 "description": "ISO 8601 instant for value_at.",
             },
         },
-        "required": ["operation", "entity_id"],
+        "required": ["operation", "name"],
         "additionalProperties": False,
     },
 )
@@ -48,6 +63,47 @@ def add_history_tool(tools: list[LiveTool]) -> list[LiveTool]:
     if any(tool.name == HISTORY_TOOL_NAME for tool in tools):
         return tools
     return [*tools, HISTORY_TOOL]
+
+
+def _resolve_entity_id(hass: HomeAssistant, args: dict[str, Any]) -> str:
+    """Resolve one natural target against entities exposed to Assist."""
+    name = args.get("name")
+    domain = args.get("domain")
+    area = args.get("area")
+    if not isinstance(name, str) or not name.strip():
+        raise ValueError("name must be a Home Assistant entity name or alias")
+    if domain is not None and (not isinstance(domain, str) or not domain.strip()):
+        raise ValueError("domain must be a Home Assistant domain")
+    if area is not None and (not isinstance(area, str) or not area.strip()):
+        raise ValueError("area must be a Home Assistant area name")
+
+    exposed_entities = async_get_exposed_entities(
+        hass, "conversation", include_state=False
+    )
+    exposed_states = [
+        state
+        for entity_id in exposed_entities
+        if (state := hass.states.get(entity_id)) is not None
+    ]
+    match_result = intent.async_match_targets(
+        hass,
+        intent.MatchTargetsConstraints(
+            name=name.strip(),
+            area_name=area.strip() if isinstance(area, str) else None,
+            domains=[domain.strip()] if isinstance(domain, str) else None,
+            allow_duplicate_names=True,
+        ),
+        states=exposed_states,
+    )
+    if not match_result.is_match or not match_result.states:
+        raise ValueError(f"No exposed Home Assistant entity matches {name!r}")
+    if len(match_result.states) != 1:
+        matches = ", ".join(sorted(state.entity_id for state in match_result.states))
+        raise ValueError(
+            f"Ambiguous Home Assistant entity name {name!r}; matches: {matches}. "
+            "Add domain or area to disambiguate."
+        )
+    return match_result.states[0].entity_id
 
 
 def _parse_time(hass: HomeAssistant, value: str | None, field: str) -> datetime:
@@ -173,11 +229,9 @@ async def async_handle_history_tool(
 ) -> dict[str, Any]:
     """Execute one read-only Recorder history query."""
     operation = args.get("operation")
-    entity_id = args.get("entity_id")
     if operation not in _VALID_OPERATIONS:
         raise ValueError("Invalid history operation")
-    if not isinstance(entity_id, str) or "." not in entity_id:
-        raise ValueError("entity_id must be an exact Home Assistant entity_id")
+    entity_id = _resolve_entity_id(hass, args)
 
     start, end = _window(hass, args)
     def _read() -> dict[str, list[State]]:
