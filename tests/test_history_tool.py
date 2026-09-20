@@ -33,6 +33,8 @@ sys.modules[_SPEC.name] = _MODULE
 assert _SPEC.loader is not None
 _SPEC.loader.exec_module(_MODULE)
 _compute = _MODULE._compute
+add_history_tool = _MODULE.add_history_tool
+HISTORY_TOOL_NAME = _MODULE.HISTORY_TOOL_NAME
 
 
 BASE = datetime(2026, 9, 20, 10, 0, tzinfo=UTC)
@@ -134,3 +136,31 @@ def test_value_at_uses_recorder_start_state():
         BASE + timedelta(microseconds=1),
     )
     assert result["value"]["state"] == "21.5"
+
+
+def test_add_history_tool_exposes_get_history_once():
+    tools = []
+    result = add_history_tool(tools)
+    assert [tool.name for tool in result] == [HISTORY_TOOL_NAME]
+    assert tools == []
+    assert add_history_tool(result) is result
+
+
+def test_text_and_voice_paths_expose_and_dispatch_get_history():
+    """Guard both production paths without importing unrelated STT/TTS modules."""
+    conversation_source = (
+        _PACKAGE_PATH / "conversation.py"
+    ).read_text(encoding="utf-8")
+    stt_source = (_PACKAGE_PATH / "stt.py").read_text(encoding="utf-8")
+
+    exposure = "live_tools = add_history_tool(live_tools)"
+    dispatch = "elif tool_name == HISTORY_TOOL_NAME:"
+    handler = "await async_handle_history_tool("
+
+    assert exposure in conversation_source
+    assert dispatch in conversation_source
+    assert handler in conversation_source
+
+    assert exposure in stt_source
+    assert dispatch in stt_source
+    assert handler in stt_source
