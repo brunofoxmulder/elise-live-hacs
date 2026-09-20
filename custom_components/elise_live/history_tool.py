@@ -171,7 +171,7 @@ def _compute(args: dict[str, Any], states: list[State], start: datetime, end: da
 async def async_handle_history_tool(
     hass: HomeAssistant, args: dict[str, Any]
 ) -> dict[str, Any]:
-    """Execute one bounded read-only Recorder history query."""
+    """Execute one read-only Recorder history query."""
     operation = args.get("operation")
     entity_id = args.get("entity_id")
     if operation not in _VALID_OPERATIONS:
