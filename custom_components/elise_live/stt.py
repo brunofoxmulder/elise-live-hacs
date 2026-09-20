@@ -558,6 +558,11 @@ class LiveModelSTT(SpeechToTextEntity):
         audio_response_chunk_count = 0
         audio_response_bytes = 0
         audio_sent = False
+        audio_stream_end_sent = False
+        receive_event_count = 0
+        turn_complete_seen = False
+        receive_natural_end = False
+        receive_cancelled = False
         last_response_activity = time.monotonic()
         gemini_replied = asyncio.Event()
         first_audio = asyncio.Event()
@@ -594,7 +599,7 @@ class LiveModelSTT(SpeechToTextEntity):
             )
 
             async def send_audio() -> None:
-                nonlocal audio_sent
+                nonlocal audio_sent, audio_stream_end_sent
                 try:
                     first_chunk = True
                     audio_buffer = bytearray()
@@ -668,6 +673,12 @@ class LiveModelSTT(SpeechToTextEntity):
                     if audio_sent and not gemini_replied.is_set():
                         _LOGGER.debug("[turn=%s] signalling audio stream end", turn_id)
                         await session.end_audio()
+                        audio_stream_end_sent = True
+                        _LOGGER.warning(
+                            "[turn=%s] audio_stream_end sent chunks=%d",
+                            turn_id,
+                            chunk_count,
+                        )
                 except asyncio.CancelledError:
                     _LOGGER.warning(
                         "[turn=%s] audio sender cancelled — the model started replying",
@@ -681,15 +692,22 @@ class LiveModelSTT(SpeechToTextEntity):
             async def receive_responses() -> None:
                 nonlocal audio_response_bytes, audio_response_chunk_count
                 nonlocal last_response_activity, show_text_content
+                nonlocal receive_event_count, turn_complete_seen
+                nonlocal receive_natural_end, receive_cancelled
                 try:
                     _LOGGER.warning("[turn=%s] receive_responses started", turn_id)
                     async for response in session.receive():
+                        receive_event_count += 1
                         _LOGGER.warning(
-                            "[turn=%s] received event tool_calls=%s audio=%s text=%s go_away=%s session_resumption_update=%s",
+                            "[turn=%s] receive event=%d tool_calls=%s audio=%s text=%s input_transcript=%s output_transcript=%s turn_complete=%s go_away=%s session_resumption_update=%s",
                             turn_id,
+                            receive_event_count,
                             bool(response.tool_calls),
                             bool(response.audio),
-                            bool(response.text or response.output_transcript),
+                            bool(response.text),
+                            bool(response.input_transcript),
+                            bool(response.output_transcript),
+                            bool(response.turn_complete),
                             bool(response.go_away),
                             bool(response.session_resumption_update),
                         )
@@ -843,6 +861,17 @@ class LiveModelSTT(SpeechToTextEntity):
                             )
 
                         if response.turn_complete:
+                            turn_complete_seen = True
+                            _LOGGER.warning(
+                                "[turn=%s] turnComplete event=%d state input_chars=%d response_chars=%d audio_chunks=%d audio_bytes=%d replied=%s",
+                                turn_id,
+                                receive_event_count,
+                                len("".join(input_transcript_parts)),
+                                len("".join(text_response_parts)),
+                                audio_response_chunk_count,
+                                audio_response_bytes,
+                                gemini_replied.is_set(),
+                            )
                             if native_audio_model and not gemini_replied.is_set():
                                 _LOGGER.warning(
                                     "[turn=%s] turnComplete before audio; keeping session open and waiting",
@@ -856,8 +885,20 @@ class LiveModelSTT(SpeechToTextEntity):
                                 len(text_response_parts),
                             )
                             break
+                    else:
+                        receive_natural_end = True
+                        _LOGGER.warning(
+                            "[turn=%s] session.receive() ended naturally after %d event(s)",
+                            turn_id,
+                            receive_event_count,
+                        )
                 except asyncio.CancelledError:
-                    _LOGGER.warning("[turn=%s] receive_responses cancelled", turn_id)
+                    receive_cancelled = True
+                    _LOGGER.warning(
+                        "[turn=%s] receive_responses cancelled after %d event(s)",
+                        turn_id,
+                        receive_event_count,
+                    )
                     raise
                 except Exception as exc:  # noqa: BLE001
                     if _is_connection_closed_ok(exc):
@@ -970,9 +1011,15 @@ class LiveModelSTT(SpeechToTextEntity):
                         )
                         if remaining <= 0:
                             _LOGGER.warning(
-                                "[turn=%s] cancelling receive task after %.1fs without response activity",
+                                "[turn=%s] cancelling receive task after %.1fs without response activity events=%d input_chars=%d response_chars=%d audio_chunks=%d audio_bytes=%d turn_complete=%s",
                                 turn_id,
                                 RESPONSE_INACTIVITY_TIMEOUT,
+                                receive_event_count,
+                                len("".join(input_transcript_parts)),
+                                len("".join(text_response_parts)),
+                                audio_response_chunk_count,
+                                audio_response_bytes,
+                                turn_complete_seen,
                             )
                             receive_task.cancel()
                             try:
@@ -1029,6 +1076,22 @@ class LiveModelSTT(SpeechToTextEntity):
             _LOGGER.warning("STT: No audio response received from the live model")
 
         final_text = input_transcript or response_text
+        _LOGGER.warning(
+            "[turn=%s] TURN SUMMARY audio_sent=%s audio_stream_end_sent=%s events=%d input_chars=%d response_chars=%d audio_chunks=%d audio_bytes=%d turn_complete_seen=%s receive_natural_end=%s receive_cancelled=%s first_audio=%s elapsed=%.3fs",
+            turn_id,
+            audio_sent,
+            audio_stream_end_sent,
+            receive_event_count,
+            len(input_transcript),
+            len(response_text),
+            audio_response_chunk_count,
+            audio_response_bytes,
+            turn_complete_seen,
+            receive_natural_end,
+            receive_cancelled,
+            first_audio.is_set(),
+            time.monotonic() - started_at,
+        )
         if first_audio.is_set():
             return SpeechResult(
                 input_transcript or self.tts_placeholder,
