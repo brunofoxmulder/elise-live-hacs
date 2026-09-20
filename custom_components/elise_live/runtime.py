@@ -198,6 +198,8 @@ class _LiveConnection:
     context_manager: Any
     session: Any
     config_signature: str
+    connection_id: str
+    turn_count: int = 0
 
 
 class LiveSessionManager:
@@ -239,13 +241,25 @@ class LiveSessionManager:
                     context_manager=context_manager,
                     session=session,
                     config_signature=signature,
+                    connection_id=uuid4().hex[:8],
                 )
                 self._connections[conversation_id] = connection
-                _LOGGER.info(
-                    "Opened live-model session for conversation %s with config %s",
+                _LOGGER.warning(
+                    "[connection=%s] opened new live-model session conversation=%s config=%s",
+                    connection.connection_id,
                     conversation_id,
                     signature[:12],
                 )
+
+            connection.turn_count += 1
+            _LOGGER.warning(
+                "[connection=%s] acquiring turn=%d conversation=%s reused=%s session_open=%s",
+                connection.connection_id,
+                connection.turn_count,
+                conversation_id,
+                connection.turn_count > 1,
+                self._is_open(connection.session),
+            )
 
             current_task = asyncio.current_task()
             if current_task is not None:
@@ -392,6 +406,12 @@ class LiveSessionManager:
         if self._connections.get(conversation_id) is not connection:
             return
         self._connections.pop(conversation_id, None)
+        _LOGGER.warning(
+            "[connection=%s] closing live-model session conversation=%s turns=%d",
+            connection.connection_id,
+            conversation_id,
+            connection.turn_count,
+        )
         try:
             await connection.context_manager.__aexit__(None, None, None)
         except Exception:  # noqa: BLE001
