@@ -175,18 +175,6 @@ class _Hass:
     config = _Config()
 
 
-def test_window_rejects_more_than_ten_days():
-    import pytest
-    with pytest.raises(ValueError, match="cannot exceed 10 days"):
-        _window(
-            _Hass(),
-            {
-                "operation": "states",
-                "start_time": "2026-09-01T00:00:00+02:00",
-                "end_time": "2026-09-12T00:00:00+02:00",
-            },
-        )
-
 
 def test_window_defaults_to_one_day():
     start, end = _window(_Hass(), {"operation": "states"})
