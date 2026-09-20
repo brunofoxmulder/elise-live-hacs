@@ -672,8 +672,20 @@ class LiveModelSTT(SpeechToTextEntity):
                         )
 
                     if audio_sent and not gemini_replied.is_set():
-                        _LOGGER.debug("[turn=%s] signalling audio stream end", turn_id)
+                        end_started = time.monotonic()
+                        _LOGGER.warning(
+                            "[turn=%s] FLIGHT_RECORDER audio_stream_end send_start elapsed=%.3fs blocks=%d",
+                            turn_id,
+                            end_started - started_at,
+                            chunk_count,
+                        )
                         await session.end_audio()
+                        _LOGGER.warning(
+                            "[turn=%s] FLIGHT_RECORDER audio_stream_end send_return elapsed=%.3fs sdk_wait=%.3fs",
+                            turn_id,
+                            time.monotonic() - started_at,
+                            time.monotonic() - end_started,
+                        )
                 except asyncio.CancelledError:
                     _LOGGER.warning(
                         "[turn=%s] audio sender cancelled — the model started replying",
@@ -689,7 +701,25 @@ class LiveModelSTT(SpeechToTextEntity):
                 nonlocal last_response_activity, show_text_content
                 try:
                     _LOGGER.warning("[turn=%s] receive_responses started", turn_id)
+                    event_count = 0
                     async for response in session.receive():
+                        event_count += 1
+                        event_elapsed = time.monotonic() - started_at
+                        _LOGGER.warning(
+                            "[turn=%s] FLIGHT_RECORDER event=%d elapsed=%.3fs tool_calls=%s audio=%s audio_bytes=%d text=%s input_transcript=%s output_transcript=%s turn_complete=%s go_away=%s session_resumption_update=%s",
+                            turn_id,
+                            event_count,
+                            event_elapsed,
+                            bool(response.tool_calls),
+                            bool(response.audio),
+                            len(response.audio) if response.audio else 0,
+                            bool(response.text),
+                            bool(response.input_transcript),
+                            bool(response.output_transcript),
+                            bool(response.turn_complete),
+                            bool(response.go_away),
+                            bool(response.session_resumption_update),
+                        )
                         _LOGGER.warning(
                             "[turn=%s] received event tool_calls=%s audio=%s text=%s go_away=%s session_resumption_update=%s",
                             turn_id,
@@ -983,6 +1013,14 @@ class LiveModelSTT(SpeechToTextEntity):
                             time.monotonic() - last_response_activity
                         )
                         if remaining <= 0:
+                            _LOGGER.warning(
+                                "[turn=%s] FLIGHT_RECORDER timeout elapsed=%.3fs last_response_age=%.3fs audio_sent=%s replied=%s",
+                                turn_id,
+                                time.monotonic() - started_at,
+                                time.monotonic() - last_response_activity,
+                                audio_sent,
+                                gemini_replied.is_set(),
+                            )
                             _LOGGER.warning(
                                 "[turn=%s] cancelling receive task after %.1fs without response activity",
                                 turn_id,
