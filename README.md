@@ -2,7 +2,7 @@
 
 Intégration vocale Home Assistant pour **Gemini Live** et **OpenAI Realtime**, avec sélection de plusieurs API LLM Home Assistant.
 
-**Version de test : 0.1.0-dev.3.** Ajoute le modèle stable `gemini-3.8-live` conformément aux recommandations de migration Google. La dev.2 reste le retour arrière validé pendant la recette terrain de cette candidate.
+**Version de test : 0.1.0-dev.4.** Ajoute l’outil interne en lecture seule `GetHistory` pour interroger l’historique Home Assistant Recorder. Le commit `ce7b3df5f7775b0b6e6706efc7721f07cbca40c7` reste le retour arrière validé avant GetHistory.
 
 Variante indépendante de [ha-gemini-live](https://github.com/matt123p/ha-gemini-live), basée sur **v1.0.7**, sous licence MIT de Matt Pyne. Ce projet communautaire n'est affilié ni à Google, ni à OpenAI, ni à Home Assistant.
 
@@ -20,7 +20,7 @@ Le domaine `elise_live` permet de conserver `gemini_live` installé en parallèl
 
 ## Installation HACS
 
-Prérequis : **Home Assistant 2026.9.2 ou plus récent**, HACS et une clé API du fournisseur choisi. Les tests de cette candidate ont été exécutés avec HA 2026.9.2 ; la compatibilité avec une version ultérieure reste à vérifier. Les outils de recherche et de météo nécessitent leurs intégrations configurées séparément.
+Prérequis : **Home Assistant 2026.9.2 ou plus récent**, HACS et une clé API du fournisseur choisi. Les tests historiques GetHistory ont été exécutés avec Home Assistant 2026.9.3 ; les tests antérieurs de l’intégration Gemini 3.8 avaient été exécutés avec HA 2026.9.2. Les outils de recherche et de météo nécessitent leurs intégrations configurées séparément.
 
 1. Disposer d'une sauvegarde récente.
 2. Dans **HACS → ⋮ → Dépôts personnalisés**, ajouter :
