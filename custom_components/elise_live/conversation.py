@@ -16,6 +16,11 @@ from homeassistant.helpers.intent import IntentResponse
 
 from .gemini import GeminiLiveClient, async_create_gemini_client
 from .live import LiveConfig, LiveTool, LiveToolResponse
+from .history_tool import (
+    HISTORY_TOOL_NAME,
+    add_history_tool,
+    async_handle_history_tool,
+)
 from .const import (
     CONF_API_KEY,
     CONF_ENCOURAGE_WEB_SEARCH,
@@ -194,6 +199,7 @@ class LiveModelConversationAgent(conversation.ConversationEntity):
             )
             if not transcribe_output and show_text:
                 live_tools = _add_show_text_tool(live_tools)
+            live_tools = add_history_tool(live_tools)
 
             _LOGGER.debug(
                 "Conversation text path loaded %d HA Assist tools",
@@ -312,6 +318,14 @@ class LiveModelConversationAgent(conversation.ConversationEntity):
                                         "success": True,
                                         "displayed": True,
                                     }
+                                elif tool_name == HISTORY_TOOL_NAME:
+                                    try:
+                                        tool_result = await async_handle_history_tool(
+                                            self.hass, tool_args
+                                        )
+                                    except Exception as err:  # noqa: BLE001
+                                        _LOGGER.error("History tool failed: %s", err)
+                                        tool_result = {"error": str(err)}
                                 elif llm_api is not None:
                                     try:
                                         tool_result = await llm_api.async_call_tool(
