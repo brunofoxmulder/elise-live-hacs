@@ -3,7 +3,15 @@
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
-from custom_components.elise_live.history_tool import _compute
+import importlib.util
+from pathlib import Path
+
+_HISTORY_PATH = Path(__file__).parents[1] / "custom_components" / "elise_live" / "history_tool.py"
+_SPEC = importlib.util.spec_from_file_location("elise_live_history_tool", _HISTORY_PATH)
+_MODULE = importlib.util.module_from_spec(_SPEC)
+assert _SPEC.loader is not None
+_SPEC.loader.exec_module(_MODULE)
+_compute = _MODULE._compute
 
 
 BASE = datetime(2026, 9, 20, 10, 0, tzinfo=UTC)
