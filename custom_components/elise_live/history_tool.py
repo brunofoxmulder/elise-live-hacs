@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from homeassistant.components.recorder import get_instance, history
@@ -56,7 +56,7 @@ def _parse_time(hass: HomeAssistant, value: str | None, field: str) -> datetime:
     if not value or (parsed := dt_util.parse_datetime(value)) is None:
         raise ValueError(f"{field} must be a valid ISO 8601 datetime")
     if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=hass.config.time_zone and dt_util.get_time_zone(hass.config.time_zone))
+        parsed = parsed.replace(tzinfo=dt_util.get_time_zone(hass.config.time_zone) or UTC)
     return dt_util.as_utc(parsed)
 
 
@@ -96,12 +96,19 @@ def _compute(args: dict[str, Any], states: list[State], start: datetime, end: da
     usable = [state for state in states if state.state not in {"unknown", "unavailable"}]
 
     if operation == "states":
-        return {"states": [_serialize(state) for state in usable[:200]], "truncated": len(usable) > 200}
+        return {"states": [_serialize(state) for state in states[:200]], "truncated": len(states) > 200}
 
     if operation == "value_at":
-        return {"value": _serialize(usable[0]) if usable else None}
+        state = states[-1] if states else None
+        return {
+            "value": (
+                _serialize(state)
+                if state is not None and state.state not in {"unknown", "unavailable"}
+                else None
+            )
+        }
 
-    transitions = usable[1:] if len(usable) > 1 else []
+    transitions = states[1:] if len(states) > 1 else []
     if operation == "last_change":
         matches = [state for state in transitions if target is None or state.state == target]
         return {"change": _serialize(matches[-1]) if matches else None}
@@ -114,22 +121,36 @@ def _compute(args: dict[str, Any], states: list[State], start: datetime, end: da
         if target is None:
             raise ValueError("target_state is required for duration")
         seconds = 0.0
-        for index, state in enumerate(usable):
+        for index, state in enumerate(states):
             segment_start = max(start, state.last_updated)
-            segment_end = min(end, usable[index + 1].last_updated) if index + 1 < len(usable) else end
+            segment_end = min(end, states[index + 1].last_updated) if index + 1 < len(states) else end
             if state.state == target and segment_end > segment_start:
                 seconds += (segment_end - segment_start).total_seconds()
         return {"seconds": round(seconds, 3), "target_state": target}
 
     if operation == "statistics":
-        values = _valid_numeric(usable)
+        values = _valid_numeric(states)
         if not values:
             return {"statistics": None}
+        weighted_sum = 0.0
+        weighted_seconds = 0.0
+        for index, state in enumerate(states):
+            if state.state in {"unknown", "unavailable"}:
+                continue
+            try:
+                value = float(state.state)
+            except (TypeError, ValueError):
+                continue
+            segment_start = max(start, state.last_updated)
+            segment_end = min(end, states[index + 1].last_updated) if index + 1 < len(states) else end
+            seconds = max(0.0, (segment_end - segment_start).total_seconds())
+            weighted_sum += value * seconds
+            weighted_seconds += seconds
         return {
             "statistics": {
                 "min": min(values),
                 "max": max(values),
-                "average": sum(values) / len(values),
+                "average": weighted_sum / weighted_seconds if weighted_seconds else sum(values) / len(values),
                 "samples": len(values),
             }
         }
