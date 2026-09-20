@@ -127,7 +127,7 @@ def _window(hass: HomeAssistant, args: dict[str, Any]) -> tuple[datetime, dateti
 
 
 def _serialize(state: State) -> dict[str, Any]:
-    return {"state": state.state, "time": state.last_updated.isoformat()}
+    return {"state": state.state, "time": dt_util.as_local(state.last_updated).isoformat()}
 
 
 def _valid_numeric(states: list[State]) -> list[float]:
