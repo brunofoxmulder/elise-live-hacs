@@ -24,7 +24,11 @@ HISTORY_TOOL = LiveTool(
         "or area. Do not invent an entity_id. Use for historical questions such as when an "
         "entity changed, its states, transition count, time spent in a state, a value at a "
         "time, min/max/average over Recorder states, or native long-term Statistics change "
-        "over a period (statistics_change), for example energy consumption in kWh. Read-only."
+        "over a period (statistics_change), for example energy consumption in kWh. "
+        "For statistics_change of energy consumption, choose a cumulative energy entity "
+        "with long-term statistics, typically measured in Wh or kWh. Do not choose an "
+        "instantaneous power entity measured in W or kW, even if its name contains "
+        "consumption or real time. Read-only."
     ),
     parameters={
         "type": "object",
