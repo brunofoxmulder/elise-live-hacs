@@ -140,6 +140,8 @@ class GeminiLiveSession:
                     )
                 if content.input_transcription and content.input_transcription.text:
                     yield LiveEvent(input_transcript=content.input_transcription.text)
+                if getattr(content, "generation_complete", False):
+                    yield LiveEvent(generation_complete=True)
                 if content.turn_complete:
                     yield LiveEvent(turn_complete=True)
 
