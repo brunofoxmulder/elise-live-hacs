@@ -1,0 +1,29 @@
+name: Live turn tests
+
+on:
+  pull_request:
+    paths:
+      - "custom_components/elise_live/live.py"
+      - "custom_components/elise_live/gemini.py"
+      - "custom_components/elise_live/stt.py"
+      - "custom_components/elise_live/conversation.py"
+      - "custom_components/elise_live/runtime.py"
+      - "tests/test_live_turn_completion.py"
+      - ".github/workflows/live-turn-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  live-turn-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Check Python syntax
+        run: python -m py_compile custom_components/elise_live/{live,gemini,stt,conversation,runtime}.py
+      - name: Run live turn checks
+        run: python -m unittest discover -s tests -p test_live_turn_completion.py -v
