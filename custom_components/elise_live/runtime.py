@@ -104,7 +104,9 @@ class TurnStore:
         """Initialize the turn store."""
         self._voice_turns: deque[PipelineTurn] = deque(maxlen=100)
         self._audio: deque[tuple[str, bytes | AudioStream]] = deque(maxlen=100)
-        self._streaming_audio: deque[tuple[TextStream, AudioStream]] = deque(maxlen=100)
+        self._streaming_audio: deque[
+            tuple[TextStream, AudioStream, str | None]
+        ] = deque(maxlen=100)
 
     def add_voice_turn(self, turn: PipelineTurn) -> None:
         """Store a voice turn for the conversation stage."""
@@ -124,7 +126,7 @@ class TurnStore:
         for _text, audio in self._audio:
             if isinstance(audio, AudioStream):
                 audio.finish()
-        for _text_stream, audio_stream in self._streaming_audio:
+        for _text_stream, audio_stream, _match_text in self._streaming_audio:
             audio_stream.finish()
         self._audio = deque(
             (
@@ -163,9 +165,14 @@ class TurnStore:
                 return audio
         return None
 
-    def add_streaming_audio(self, text: TextStream, audio: AudioStream) -> None:
-        """Store audio waiting for Home Assistant's streaming TTS input."""
-        self._streaming_audio.append((text, audio))
+    def add_streaming_audio(
+        self,
+        text: TextStream,
+        audio: AudioStream,
+        match_text: str | None = None,
+    ) -> None:
+        """Store streaming audio with its transcript and a per-turn fallback key."""
+        self._streaming_audio.append((text, audio, match_text))
         _LOGGER.debug(
             "Queued streaming audio for transcript prefix %r",
             text.text[:80],
@@ -173,10 +180,19 @@ class TurnStore:
 
     def take_streaming_audio(self, initial_text: str) -> AudioStream | None:
         """Take streaming audio whose transcript matches the TTS input."""
-        for index, (text_stream, audio_stream) in enumerate(self._streaming_audio):
+        for index, (text_stream, audio_stream, match_text) in enumerate(
+            self._streaming_audio
+        ):
             transcript = text_stream.text
-            if transcript and (
-                transcript.startswith(initial_text) or initial_text.startswith(transcript)
+            if (
+                (match_text is not None and initial_text == match_text)
+                or (
+                    transcript
+                    and (
+                        transcript.startswith(initial_text)
+                        or initial_text.startswith(transcript)
+                    )
+                )
             ):
                 del self._streaming_audio[index]
                 _LOGGER.debug(

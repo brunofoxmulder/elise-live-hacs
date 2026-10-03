@@ -55,6 +55,7 @@ class LiveEvent:
     output_transcript: str | None = None
     tool_calls: list[LiveToolCall] = field(default_factory=list)
     turn_complete: bool = False
+    generation_complete: bool = False
     go_away: Any = None
     session_resumption_update: Any = None
 

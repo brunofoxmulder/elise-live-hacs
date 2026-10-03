@@ -701,34 +701,16 @@ class LiveModelSTT(SpeechToTextEntity):
                 nonlocal last_response_activity, show_text_content
                 try:
                     _LOGGER.warning("[turn=%s] receive_responses started", turn_id)
-                    event_count = 0
                     async for response in session.receive():
-                        event_count += 1
-                        event_elapsed = time.monotonic() - started_at
-                        _LOGGER.warning(
-                            "[turn=%s] FLIGHT_RECORDER event=%d elapsed=%.3fs tool_calls=%s audio=%s audio_bytes=%d text=%s input_transcript=%s output_transcript=%s turn_complete=%s go_away=%s session_resumption_update=%s",
-                            turn_id,
-                            event_count,
-                            event_elapsed,
-                            bool(response.tool_calls),
-                            bool(response.audio),
-                            len(response.audio) if response.audio else 0,
-                            bool(response.text),
-                            bool(response.input_transcript),
-                            bool(response.output_transcript),
-                            bool(response.turn_complete),
-                            bool(response.go_away),
-                            bool(response.session_resumption_update),
-                        )
-                        _LOGGER.warning(
-                            "[turn=%s] received event tool_calls=%s audio=%s text=%s go_away=%s session_resumption_update=%s",
-                            turn_id,
-                            bool(response.tool_calls),
-                            bool(response.audio),
-                            bool(response.text or response.output_transcript),
-                            bool(response.go_away),
-                            bool(response.session_resumption_update),
-                        )
+                        if not response.audio:
+                            _LOGGER.debug(
+                                "[turn=%s] received event tool_calls=%s text=%s generation_complete=%s turn_complete=%s",
+                                turn_id,
+                                bool(response.tool_calls),
+                                bool(response.text or response.output_transcript),
+                                response.generation_complete,
+                                response.turn_complete,
+                            )
                         if response.go_away:
                             _LOGGER.warning(
                                 "[turn=%s] Gemini go_away=%s",
@@ -884,6 +866,21 @@ class LiveModelSTT(SpeechToTextEntity):
                                 turn_id,
                                 len(transcription),
                                 transcription[:200],
+                            )
+
+                        if (
+                            response.generation_complete
+                            and first_audio.is_set()
+                            and not response.tool_calls
+                        ):
+                            # Gemini has finished generating audio. Its turn
+                            # completion can arrive later; playback can end now.
+                            response_audio_stream.finish()
+                            if response_text_stream is not None:
+                                response_text_stream.finish()
+                            _LOGGER.warning(
+                                "[turn=%s] generationComplete; closed audio stream",
+                                turn_id,
                             )
 
                         if response.turn_complete:
