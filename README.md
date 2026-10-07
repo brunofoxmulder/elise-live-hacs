@@ -2,7 +2,7 @@
 
 Intégration vocale Home Assistant pour **Gemini Live** et **OpenAI Realtime**, avec sélection de plusieurs API LLM Home Assistant.
 
-**Version de test : 0.1.0-dev.4.** Ajoute l’outil interne en lecture seule `GetHistory` pour interroger l’historique Home Assistant Recorder. Le commit `ce7b3df5f7775b0b6e6706efc7721f07cbca40c7` reste le retour arrière validé avant GetHistory.
+**Version de test : 0.1.0-dev.5.** Corrige la conversion des énumérations d'outils Gemini contenant `null` (compatibilité HA 2026.10), avec tests de non-régression. La validation sur HA réel reste à effectuer. Ajoute l’outil interne en lecture seule `GetHistory` pour interroger l’historique Home Assistant Recorder. Le commit `ce7b3df5f7775b0b6e6706efc7721f07cbca40c7` reste le retour arrière validé avant GetHistory.
 
 Variante indépendante de [ha-gemini-live](https://github.com/matt123p/ha-gemini-live), basée sur **v1.0.7**, sous licence MIT de Matt Pyne. Ce projet communautaire n'est affilié ni à Google, ni à OpenAI, ni à Home Assistant.
 
