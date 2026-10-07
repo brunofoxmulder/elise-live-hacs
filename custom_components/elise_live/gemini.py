@@ -225,9 +225,17 @@ def _gemini_schema(schema: dict[str, Any]) -> dict[str, Any]:
             value = {name: _gemini_schema(item) for name, item in value.items()}
         result[key] = value
 
-    if result.get("enum") and result.get("type") != "STRING":
-        result["type"] = "STRING"
-        result["enum"] = [str(item) for item in result["enum"]]
+    if "enum" in result:
+        # Gemini requires string enum members; OpenAPI may include null for
+        # optional values. Preserve that possibility with nullable instead.
+        values = result["enum"]
+        if None in values:
+            result["nullable"] = True
+        result["enum"] = [str(item) for item in values if item is not None]
+        if result["enum"]:
+            result["type"] = "STRING"
+        else:
+            result.pop("enum")
     if result.get("type") == "OBJECT" and not result.get("properties"):
         result["properties"] = {"json": {"type": "STRING"}}
         result["required"] = []
