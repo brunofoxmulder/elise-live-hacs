@@ -75,6 +75,27 @@ class FakeSession:
 
 
 class LiveTurnTests(unittest.IsolatedAsyncioTestCase):
+    async def test_nullable_string_enum_is_accepted_by_gemini_schema(self):
+        schema = {"type": "object", "properties": {"compare": {
+            "type": "string", "enum": ["eq", "ne", None],
+        }}}
+        result = gemini._gemini_schema(schema)
+        compare = result["properties"]["compare"]
+        self.assertEqual(compare["type"], "STRING")
+        self.assertEqual(compare["enum"], ["eq", "ne"])
+        self.assertTrue(compare["nullable"])
+        self.assertNotIn(None, compare["enum"])
+
+    async def test_nullable_only_enum_does_not_send_invalid_enum(self):
+        result = gemini._gemini_schema({"type": "string", "enum": [None]})
+        self.assertNotIn("enum", result)
+        self.assertTrue(result["nullable"])
+
+    async def test_non_nullable_enum_keeps_values(self):
+        result = gemini._gemini_schema({"type": "string", "enum": ["on", "off"]})
+        self.assertEqual(result["enum"], ["on", "off"])
+        self.assertNotIn("nullable", result)
+
     async def test_generation_completion_precedes_turn_completion(self):
         events = [
             event
